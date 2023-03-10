@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use reqwest::Client;
 
-use std::{fmt::Write, time::Duration};
+use std::fmt::Write;
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -34,17 +34,20 @@ async fn main() -> Result<()> {
     teloxide::repl(bot, |bot: Bot, m: Message| async move {
         let client = reqwest::ClientBuilder::new()
             .user_agent(USER_AGENT)
-            .timeout(Duration::from_millis(500))
             .build()?;
-        req_client_init(&client)
-            .await
-            .expect("bili query init failed");
 
         let mut resp_text = String::new();
 
         if let MessageKind::Common(msg) = m.kind {
             if let MediaKind::Text(MediaText { text, .. }) = msg.media_kind {
                 if let Some(name) = filter_query(&text) {
+                    if let Err(_) = req_client_init(&client).await {
+                        log::error!("bilibili initialize failed");
+                        return Ok(());
+                    }
+                    if name.is_empty() {
+                        return Ok(());
+                    }
                     for &mid in POPULAR_UP {
                         for (avid, title) in fetch_videos(&client, mid, name)
                             .await
@@ -52,7 +55,7 @@ async fn main() -> Result<()> {
                         {
                             resp_text
                                 .write_fmt(format_args!(
-                                    "[{title}](https://bilibili.com/video/av{avid})\n"
+                                    "<a href=\"https://www.bilibili.com/video/av{avid}\">{title}</a>\n"
                                 ))
                                 .unwrap();
                         }
@@ -61,9 +64,13 @@ async fn main() -> Result<()> {
             }
         }
 
+        if !resp_text.is_empty() {
+
         bot.send_message(m.chat.id, resp_text.trim_end())
-            .parse_mode(ParseMode::MarkdownV2)
+            .parse_mode(ParseMode::Html)
+            .disable_web_page_preview(true)
             .await?;
+        }
 
         Ok(())
     })
