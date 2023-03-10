@@ -10,6 +10,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use teloxide::{
+    adaptors::Throttle,
     prelude::*,
     types::{MediaKind, MediaText, MessageKind, ParseMode},
 };
@@ -37,7 +38,7 @@ async fn main() -> Result<()> {
         ..Default::default()
     });
 
-    teloxide::repl(bot, |bot: Bot, m: Message| async move {
+    teloxide::repl(bot, |bot: Throttle<Bot>, m: Message| async move {
         let client = reqwest::ClientBuilder::new()
             .user_agent(USER_AGENT)
             .build()?;
