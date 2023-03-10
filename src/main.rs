@@ -10,12 +10,15 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use teloxide::{
-    adaptors::Throttle,
+    adaptors::{
+        throttle::{Limits, Settings},
+        Throttle,
+    },
     prelude::*,
     types::{MediaKind, MediaText, MessageKind, ParseMode},
 };
 
-use teloxide_core::{adaptors::throttle::Limits, requests::RequesterExt, Bot};
+use teloxide_core::Bot;
 
 const USER_AGENT: &str =
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.24";
@@ -32,11 +35,18 @@ enum FetchError {
 async fn main() -> Result<()> {
     pretty_env_logger::init();
     log::info!("Starting workarounds bot...");
-    let bot = Bot::from_env().throttle(Limits {
-        messages_per_sec_chat: 1,
-        messages_per_sec_overall: 5,
-        ..Default::default()
-    });
+    let bot = Throttle::spawn_with_settings(
+        Bot::from_env(),
+        Settings::default()
+            .check_slow_mode()
+            .no_retry()
+            .limits(Limits {
+                messages_per_min_chat: 5,
+                messages_per_min_channel: 5,
+                messages_per_sec_overall: 3,
+                messages_per_sec_chat: 1,
+            }),
+    );
 
     teloxide::repl(bot, |bot: Throttle<Bot>, m: Message| async move {
         let client = reqwest::ClientBuilder::new()

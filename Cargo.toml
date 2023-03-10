@@ -6,14 +6,25 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-teloxide = { version = "0.12", features = ["macros"] }
-teloxide-core ={ version = "0.9.1", features = ["throttle"]}
+teloxide = { version = "0.12", features = [
+    "macros",
+    "rustls",
+    "ctrlc_handler",
+], default-features = false }
+teloxide-core = { version = "0.9.1", features = [
+    "throttle",
+    "rustls",
+], default-features = false }
 
 log = "0.4"
 pretty_env_logger = "0.4"
 
+reqwest = { version = "0.11.14", features = [
+    "json",
+    "cookies",
+    "rustls-tls-native-roots",
+], default-features = false }
 tokio = { version = "1.26", features = ["macros", "rt-multi-thread"] }
-reqwest = { version = "0.11.14", features = ["json", "cookies"] }
 
 serde = { version = "1.0.154", features = ["derive"] }
 
