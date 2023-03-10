@@ -7,12 +7,18 @@ edition = "2021"
 
 [dependencies]
 teloxide = { version = "0.12", features = ["macros"] }
+teloxide-core ={ version = "0.9.1", features = ["throttle"]}
+
 log = "0.4"
 pretty_env_logger = "0.4"
-tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
+
+tokio = { version = "1.26", features = ["macros", "rt-multi-thread"] }
 reqwest = { version = "0.11.14", features = ["json", "cookies"] }
+
 serde = { version = "1.0.154", features = ["derive"] }
+
 anyhow = "1.0.69"
+thiserror = "1.0.39"
+
 regex = "1.7.1"
 lazy_static = "1.4.0"
-thiserror = "1.0.39"

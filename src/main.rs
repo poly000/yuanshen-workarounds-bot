@@ -14,6 +14,8 @@ use teloxide::{
     types::{MediaKind, MediaText, MessageKind, ParseMode},
 };
 
+use teloxide_core::{adaptors::throttle::Limits, requests::RequesterExt, Bot};
+
 const USER_AGENT: &str =
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.24";
 
@@ -29,7 +31,11 @@ enum FetchError {
 async fn main() -> Result<()> {
     pretty_env_logger::init();
     log::info!("Starting workarounds bot...");
-    let bot = Bot::from_env();
+    let bot = Bot::from_env().throttle(Limits {
+        messages_per_sec_chat: 1,
+        messages_per_sec_overall: 5,
+        ..Default::default()
+    });
 
     teloxide::repl(bot, |bot: Bot, m: Message| async move {
         let client = reqwest::ClientBuilder::new()
