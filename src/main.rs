@@ -39,15 +39,21 @@ async fn main() -> Result<()> {
         let mut resp_text = String::new();
 
         if let MessageKind::Common(msg) = m.kind {
+            if msg.forward.is_some() || msg.reply_to_message.is_some() {
+                return Ok(());
+            }
+
             if let MediaKind::Text(MediaText { text, .. }) = msg.media_kind {
                 if let Some(name) = filter_query(&text) {
                     if let Err(_) = req_client_init(&client).await {
                         log::error!("bilibili initialize failed");
                         return Ok(());
                     }
-                    if name.is_empty() {
+
+                    if name.is_empty(){
                         return Ok(());
                     }
+
                     for &mid in POPULAR_UP {
                         for (avid, title) in fetch_videos(&client, mid, name)
                             .await
