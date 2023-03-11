@@ -90,8 +90,10 @@ async fn main() -> Result<()> {
         if !resp_text.is_empty() {
 
         bot.send_message(m.chat.id, resp_text.trim_end())
-            .parse_mode(ParseMode::Html)
+            .allow_sending_without_reply(true)
             .disable_web_page_preview(true)
+            .parse_mode(ParseMode::Html)
+            .reply_to_message_id(m.id)
             .await?;
         }
 
