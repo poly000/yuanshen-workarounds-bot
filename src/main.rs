@@ -62,7 +62,7 @@ async fn main() -> Result<()> {
 
             if let MediaKind::Text(MediaText { text, .. }) = msg.media_kind {
                 if let Some(name) = filter_query(&text) {
-                    if let Err(_) = req_client_init(&client).await {
+                    if req_client_init(&client).await.is_err() {
                         log::error!("bilibili initialize failed");
                         return Ok(());
                     }
