@@ -71,6 +71,10 @@ async fn main() -> Result<()> {
                         return Ok(());
                     }
 
+                    if name == "老婆" {
+                        resp_text += "在诚哥壶里\n";
+                    }
+
                     for &mid in POPULAR_UP {
                         for (avid, title) in fetch_videos(&client, mid, name)
                             .await
