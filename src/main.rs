@@ -27,8 +27,8 @@ const POPULAR_UP: &[u64] = &[431073645, 635041, 1773346];
 
 #[derive(Debug, Error)]
 enum FetchError {
-    #[error("code is not zero")]
-    NonZeroCode,
+    #[error("{0}")]
+    NonZeroCode(i64),
 }
 
 #[tokio::main]
@@ -76,15 +76,20 @@ async fn main() -> Result<()> {
                     }
 
                     for &mid in POPULAR_UP {
-                        for (avid, title) in fetch_videos(&client, mid, name)
-                            .await
-                            .expect("Error occured in fetching")
-                        {
-                            resp_text
-                                .write_fmt(format_args!(
-                                    "<a href=\"https://www.bilibili.com/video/av{avid}\">{title}</a>\n"
-                                ))
-                                .unwrap();
+                        let video_list = fetch_videos(&client, mid, name)
+                            .await;
+                        match video_list {
+                            Ok(list) => {
+                                for (avid, title) in list
+                                {
+                                    resp_text
+                                        .write_fmt(format_args!(
+                                            "<a href=\"https://www.bilibili.com/video/av{avid}\">{title}</a>\n"
+                                        ))
+                                        .unwrap();
+                                }
+                            },
+                            Err(e) => resp_text.write_fmt(format_args!("呜呜呜出错了 {}\n", e)).unwrap(),
                         }
                     }
                 }
@@ -143,9 +148,10 @@ async fn fetch_videos(
         .send()
         .await?;
     let result: Response = resp.json().await?;
+
     if result.code != 0 {
         log::error!("error searching video of {mid}: {}", result.message);
-        Err(FetchError::NonZeroCode)?;
+        Err(FetchError::NonZeroCode(result.code))?;
     }
 
     Ok(result
