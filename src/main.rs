@@ -1,10 +1,11 @@
 use anyhow::Result;
+use bili_wbi_sign_rs::{mixin_key, wbi_sign_encode};
 use serde::Deserialize;
 use thiserror::Error;
 
 use reqwest::Client;
 
-use std::fmt::Write;
+use std::{collections::HashMap, fmt::Write};
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -137,16 +138,22 @@ async fn fetch_videos(
     client: &Client,
     mid: u64,
     keyword: &str,
-) -> Result<impl Iterator<Item = (u64, String)>> {
+) -> std::result::Result<impl Iterator<Item = (u64, String)>, Box<dyn std::error::Error>> {
+    let mut query_map: HashMap<String, String> = HashMap::new();
+    query_map.insert("ps".into(), "2".into());
+    query_map.insert("mid".into(), mid.to_string());
+    query_map.insert("keyword".into(), keyword.into());
+    let wbi_key = bili_wbi_sign_rs::get_wbi_keys(&client).await?;
+    let mixin_key = unsafe { mixin_key(wbi_key.as_bytes()) };
+
+    let params = wbi_sign_encode(query_map, &mixin_key);
+
     let resp = client
         .get("https://api.bilibili.com/x/space/wbi/arc/search")
-        .query(&[
-            ("ps", "2"),
-            ("mid", mid.to_string().as_str()),
-            ("keyword", keyword),
-        ])
+        .query(&params)
         .send()
         .await?;
+
     let result: Response = resp.json().await?;
 
     if result.code != 0 {
