@@ -1,14 +1,20 @@
 use anyhow::Result;
-use bili_wbi_sign_rs::{mixin_key, wbi_sign_encode};
 use serde::Deserialize;
 use thiserror::Error;
 
 use reqwest::Client;
+use tokio::sync::RwLock;
+use ttl_cache::TtlCache;
 
-use std::{collections::HashMap, fmt::Write};
+use std::{collections::HashMap, fmt::Write, sync::Arc};
 
 use lazy_static::lazy_static;
 use regex::Regex;
+
+lazy_static! {
+    static ref MIXIN_KEY: Arc<RwLock<TtlCache<&'static str, String>>> =
+        Arc::new(RwLock::new(TtlCache::new(1)));
+}
 
 use teloxide::{
     adaptors::{
@@ -143,10 +149,25 @@ async fn fetch_videos(
     query_map.insert("ps".into(), "2".into());
     query_map.insert("mid".into(), mid.to_string());
     query_map.insert("keyword".into(), keyword.into());
-    let wbi_key = bili_wbi_sign_rs::get_wbi_keys(&client).await?;
-    let mixin_key = unsafe { mixin_key(wbi_key.as_bytes()) };
 
-    let params = wbi_sign_encode(query_map, &mixin_key);
+    let params;
+
+    let c_mixin_key = MIXIN_KEY.clone();
+    if let Some(mixin_key) = c_mixin_key.read().await.get("mixin_key") {
+        params = bili_wbi_sign_rs::wbi_sign_encode(query_map, &mixin_key);
+    } else {
+        let wbi_key = bili_wbi_sign_rs::get_wbi_keys(&client).await?;
+        let mixin_key = unsafe { bili_wbi_sign_rs::mixin_key(wbi_key.as_bytes()) };
+
+        params = bili_wbi_sign_rs::wbi_sign_encode(query_map, &mixin_key);
+
+        if let Some(ttl) = bili_wbi_sign_rs::expires_after()
+            .map(|d| d.to_std().ok())
+            .flatten()
+        {
+            c_mixin_key.write().await.insert("mixin_key", mixin_key, ttl);
+        }
+    }
 
     let resp = client
         .get("https://api.bilibili.com/x/space/wbi/arc/search")

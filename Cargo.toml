@@ -35,3 +35,4 @@ regex = "1.7.1"
 lazy_static = "1.4.0"
 bili-wbi-sign-rs = { git = "https://github.com/000ylop/bili-wbi-sign-rs/", version = "0.1.0" }
 url = "2.4.0"
+ttl_cache = "0.5.1"
