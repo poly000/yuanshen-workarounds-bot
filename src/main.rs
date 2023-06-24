@@ -2,8 +2,6 @@ use anyhow::Result;
 use bili_wbi_sign_rs::wbi_sign_encode;
 use thiserror::Error;
 
-use reqwest::Client;
-
 use std::{collections::HashMap, fmt::Write};
 
 use regex::Regex;
@@ -18,7 +16,7 @@ use teloxide::{
 };
 use teloxide_core::{types::MessageCommon, Bot};
 
-use yuanshen_workarounds_bot::{types, utils, USER_AGENT};
+use yuanshen_workarounds_bot::{types, utils, Client};
 
 const POPULAR_UP: &[u64] = &[431073645, 635041, 1773346];
 
@@ -46,13 +44,11 @@ async fn main() -> Result<()> {
     );
 
     teloxide::repl(bot, |bot: Throttle<Bot>, m: Message| async move {
-        let client = reqwest::ClientBuilder::new()
-            .user_agent(USER_AGENT)
-            .build()?;
-        if utils::req_client_init(&client).await.is_err() {
+        let client = utils::req_client_build().await;
+        let Ok(client) = client else {
             log::error!("http client initialize failed");
             return Ok(());
-        }
+        };
 
         let mut resp_text = String::new();
 
