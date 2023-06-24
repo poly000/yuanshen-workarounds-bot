@@ -85,7 +85,7 @@ async fn main() -> Result<()> {
                                 .unwrap();
                         }
                     },
-                    Err(e) => resp_text.write_fmt(format_args!("呜呜呜出错了 {}\n", e)).unwrap(),
+                    Err(e) => resp_text.write_fmt(format_args!("呜呜呜出错了 {e}\n")).unwrap(),
                 }
             }
             }
